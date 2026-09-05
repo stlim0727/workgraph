@@ -4,6 +4,10 @@ import { Composer } from "@/components/composer";
 import { ThingPill } from "@/components/thing-pill";
 import { messages, things, work } from "@/lib/mock-data";
 
+export function generateStaticParams() {
+  return [{ workSlug: work.slug }];
+}
+
 export default async function WorkPage({ params }: { params: Promise<{ workSlug: string }> }) {
   const { workSlug } = await params;
   if (workSlug !== work.slug) notFound();

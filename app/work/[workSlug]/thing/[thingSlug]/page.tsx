@@ -5,6 +5,10 @@ import { Composer } from "@/components/composer";
 import { ThingPill } from "@/components/thing-pill";
 import { getThing, things, work } from "@/lib/mock-data";
 
+export function generateStaticParams() {
+  return things.map((thing) => ({ workSlug: work.slug, thingSlug: thing.slug }));
+}
+
 export default async function ThingPage({ params }: { params: Promise<{ workSlug: string; thingSlug: string }> }) {
   const { workSlug, thingSlug } = await params;
   const thing = getThing(thingSlug);
