@@ -3,16 +3,23 @@ import Link from "next/link";
 import { PageShell } from "@/components/app-shell";
 import { Composer } from "@/components/composer";
 import { ThingPill } from "@/components/thing-pill";
-import { getThing, things, work } from "@/lib/mock-data";
+import { getRecentEventsForThing, getThingBySlug, getThingsForWork, getWorkBySlug } from "@/lib/data";
+import { formatEventLabel, formatRelativeKorean } from "@/lib/format";
 
-export function generateStaticParams() {
-  return things.map((thing) => ({ workSlug: work.slug, thingSlug: thing.slug }));
-}
+export const dynamic = "force-dynamic";
 
 export default async function ThingPage({ params }: { params: Promise<{ workSlug: string; thingSlug: string }> }) {
   const { workSlug, thingSlug } = await params;
-  const thing = getThing(thingSlug);
-  if (workSlug !== work.slug || !thing) notFound();
+  const work = await getWorkBySlug(workSlug);
+  if (!work) notFound();
+
+  const thing = await getThingBySlug(work.id, thingSlug);
+  if (!thing) notFound();
+
+  const [things, activity] = await Promise.all([
+    getThingsForWork(work.id),
+    getRecentEventsForThing(thing.id),
+  ]);
   const related = things.filter((item) => item.slug !== thing.slug).slice(0, 3);
 
   return (
@@ -26,12 +33,18 @@ export default async function ThingPage({ params }: { params: Promise<{ workSlug
           <p className="thing-description">{thing.description}</p>
           <div className="detail-section">
             <h2>Related Things</h2>
-            <div className="related-list">{related.map((item) => <ThingPill key={item.slug} thing={item} />)}</div>
+            <div className="related-list">{related.map((item) => <ThingPill key={item.slug} thing={item} workSlug={work.slug} />)}</div>
           </div>
           <div className="detail-section activity-section">
             <h2>Recent activity</h2>
-            <div className="activity-item"><span className="activity-icon">✦</span><div><p>Workgraph가 대화에서 이 Thing을 참조했어요</p><span>오늘, 오전 10:37</span></div></div>
-            <div className="activity-item"><span className="activity-icon created">＋</span><div><p>이 Thing이 만들어졌어요</p><span>어제, 오후 4:12</span></div></div>
+            {activity.map((event) => (
+              <div className="activity-item" key={event.id}>
+                <span className={`activity-icon${event.type === "thing_created" ? " created" : ""}`}>
+                  {event.type === "thing_created" ? "＋" : "✦"}
+                </span>
+                <div><p>{formatEventLabel(event.type)}</p><span>{formatRelativeKorean(event.createdAt)}</span></div>
+              </div>
+            ))}
           </div>
         </article>
         <aside className="ask-panel">
