@@ -22,3 +22,14 @@ next-env.d.ts
 
 # local visual verification
 /artifacts/
+
+# Netlify CLI site link
+/.netlify/
+
+# OpenNext
+.open-next
+
+# wrangler files
+.wrangler
+.dev.vars*
+!.dev.vars.example

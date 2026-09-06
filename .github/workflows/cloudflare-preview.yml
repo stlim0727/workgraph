@@ -1,0 +1,143 @@
+name: Cloudflare Preview
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, closed]
+
+concurrency:
+  group: cloudflare-preview-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    # Fork PRs never receive environment/repo secrets, so this would just fail
+    # loudly on the first authenticated wrangler command — skip it instead.
+    if: github.event.action != 'closed' && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    # Requires a "cloudflare-preview" GitHub Environment (Settings > Environments).
+    # Add the four secrets below to that environment rather than repo-level secrets,
+    # and configure required reviewers on it so PR-branch code can't reach them
+    # unannounced — see the README's "PR previews" section.
+    environment: cloudflare-preview
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Point this Worker's self-reference at its own preview name
+        run: |
+          sed -i "s/\"workgraph\"/\"workgraph-pr-${{ github.event.pull_request.number }}\"/g" wrangler.jsonc
+
+      - name: Build for Cloudflare
+        run: npx opennextjs-cloudflare build
+
+      - name: Set Worker secrets
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          node -e '
+            console.log(JSON.stringify({
+              SUPABASE_URL: process.env.SUPABASE_URL,
+              SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
+            }));
+          ' | npx wrangler secret bulk --name "workgraph-pr-${{ github.event.pull_request.number }}"
+
+      - name: Deploy Worker
+        id: deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          npx wrangler deploy --name "workgraph-pr-${{ github.event.pull_request.number }}" | tee deploy-output.txt
+          url=$(grep -oE 'https://[a-zA-Z0-9.-]+\.workers\.dev' deploy-output.txt | head -1)
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+
+      - name: Comment preview URL on PR
+        if: steps.deploy.outputs.url != ''
+        uses: actions/github-script@v7
+        env:
+          PREVIEW_URL: ${{ steps.deploy.outputs.url }}
+        with:
+          script: |
+            const marker = "<!-- cloudflare-preview -->";
+            const url = process.env.PREVIEW_URL;
+            const body = `${marker}\n🔗 **Cloudflare preview:** ${url}\n\n_Updated for ${context.sha.slice(0, 7)}._`;
+            const comments = await github.paginate(github.rest.issues.listComments, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.pull_request.number,
+              per_page: 100,
+            });
+            const existing = comments.find((c) => c.body && c.body.includes(marker));
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.payload.pull_request.number,
+                body,
+              });
+            }
+
+  cleanup:
+    # Mirror the deploy guard — a fork PR never had a preview Worker deployed.
+    if: github.event.action == 'closed' && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    # Same environment as `deploy` so it can read CLOUDFLARE_API_TOKEN/ACCOUNT_ID.
+    # If you add required reviewers to this environment, closing a PR will also
+    # need an approval click before its preview Worker gets deleted.
+    environment: cloudflare-preview
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Delete preview Worker
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set +e
+          output=$(npx wrangler delete --force --name "workgraph-pr-${{ github.event.pull_request.number }}" 2>&1)
+          status=$?
+          echo "$output"
+          if [ $status -eq 0 ]; then
+            exit 0
+          fi
+          # Only tolerate "there was nothing to delete" — anything else fails
+          # the job so an orphaned Worker (still holding the service role key)
+          # doesn't go unnoticed.
+          # Cloudflare's script_not_found / error 10007 specifically means "this
+          # Worker script doesn't exist" — unlike a generic "not found", it can't
+          # be confused with an unrelated failure (e.g. a stale account ID
+          # producing an "account not found" error), which must still fail loudly.
+          if echo "$output" | grep -qiE "script_not_found|\\b10007\\b"; then
+            echo "Preview Worker already gone — treating as success."
+            exit 0
+          fi
+          echo "::error::Failed to delete preview Worker workgraph-pr-${{ github.event.pull_request.number }} — it may still be publicly reachable with the preview secrets. Delete it manually and investigate."
+          exit 1
