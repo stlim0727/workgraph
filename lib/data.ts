@@ -130,7 +130,7 @@ export async function getMessagesForWork(workId: string, limit = 50): Promise<Me
     .select("id, role, content, created_at")
     .eq("work_id", workId)
     .neq("role", "system")
-    .order("created_at", { ascending: false })
+    .order("seq", { ascending: false })
     .limit(limit);
 
   if (error) throw error;
@@ -178,7 +178,7 @@ export async function getRecentEventsForThing(workId: string, thingId: string, l
     .select("id, type, created_at")
     .eq("work_id", workId)
     .eq("thing_id", thingId)
-    .order("created_at", { ascending: false })
+    .order("seq", { ascending: false })
     .limit(limit);
 
   if (error) throw error;
