@@ -55,6 +55,16 @@ npm run deploy               # builds and deploys
 
 `npm run preview` builds and runs the Worker locally via `wrangler dev` for a closer-to-production smoke test than `next dev`.
 
+### PR previews
+
+`.github/workflows/cloudflare-preview.yml` deploys every pull request to its own Worker (`workgraph-pr-<number>`) and comments the live URL on the PR, updating that comment on every subsequent push. The Worker is deleted when the PR closes. This needs four repository secrets under **Settings → Secrets and variables → Actions**:
+
+- `CLOUDFLARE_API_TOKEN` — a token with Workers Scripts edit permission ([create one](https://dash.cloudflare.com/profile/api-tokens))
+- `CLOUDFLARE_ACCOUNT_ID` — found on the right sidebar of any zone/account overview page in the Cloudflare dashboard
+- `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` — same values as `.env.local`
+
+All PR previews currently point at the same Supabase project as local development — there's no separate per-preview or staging database yet.
+
 ## Checks
 
 ```bash
