@@ -18,7 +18,7 @@ export default async function ThingPage({ params }: { params: Promise<{ workSlug
 
   const [related, activity] = await Promise.all([
     getRelatedThings(work.id, thing.id),
-    getRecentEventsForThing(thing.id),
+    getRecentEventsForThing(work.id, thing.id),
   ]);
 
   return (

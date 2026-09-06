@@ -171,11 +171,12 @@ export async function getRelatedThings(workId: string, thingId: string): Promise
   return (things ?? []).map(toThing);
 }
 
-export async function getRecentEventsForThing(thingId: string, limit = 5): Promise<ActivityEvent[]> {
+export async function getRecentEventsForThing(workId: string, thingId: string, limit = 5): Promise<ActivityEvent[]> {
   const supabase = getSupabaseServerClient();
   const { data, error } = await supabase
     .from("events")
     .select("id, type, created_at")
+    .eq("work_id", workId)
     .eq("thing_id", thingId)
     .order("created_at", { ascending: false })
     .limit(limit);
