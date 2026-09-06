@@ -42,6 +42,19 @@ Open [http://localhost:3000](http://localhost:3000). The prototype includes:
 
 Schema and seed data live in `supabase/migrations/` (`works`, `things`, `relations`, `messages`, `events`, plus the dogfood seed data). Row Level Security is enabled on every table with no policies — all reads happen server-side through `lib/data.ts` using the service role key, which bypasses RLS. The service role key must never be exposed to the client bundle.
 
+## Deploying to Cloudflare Workers
+
+The app is set up for Cloudflare Workers via [`@opennextjs/cloudflare`](https://opennext.js.org/cloudflare) (`open-next.config.ts`, `wrangler.jsonc`):
+
+```bash
+npx wrangler login          # once, to authenticate the CLI
+npx wrangler secret put SUPABASE_URL
+npx wrangler secret put SUPABASE_SERVICE_ROLE_KEY
+npm run deploy               # builds and deploys
+```
+
+`npm run preview` builds and runs the Worker locally via `wrangler dev` for a closer-to-production smoke test than `next dev`.
+
 ## Checks
 
 ```bash
