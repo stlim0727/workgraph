@@ -3,7 +3,7 @@ import { PageShell } from "@/components/app-shell";
 import { Composer } from "@/components/composer";
 import { ThingPill } from "@/components/thing-pill";
 import { getMessagesForWork, getThingsForWork, getWorkBySlug, type Work } from "@/lib/data";
-import { formatDayLabel, formatTime } from "@/lib/format";
+import { formatDayKey, formatDayLabel, formatTime } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
 
@@ -23,14 +23,14 @@ export default async function WorkPage({ params }: { params: Promise<{ workSlug:
     getMessagesForWork(work.id),
   ]);
 
-  const dayGroups: { label: string; messages: typeof messages }[] = [];
+  const dayGroups: { key: string; label: string; messages: typeof messages }[] = [];
   for (const message of messages) {
-    const label = formatDayLabel(message.createdAt);
+    const key = formatDayKey(message.createdAt);
     const currentGroup = dayGroups[dayGroups.length - 1];
-    if (currentGroup && currentGroup.label === label) {
+    if (currentGroup && currentGroup.key === key) {
       currentGroup.messages.push(message);
     } else {
-      dayGroups.push({ label, messages: [message] });
+      dayGroups.push({ key, label: formatDayLabel(message.createdAt), messages: [message] });
     }
   }
 
@@ -48,8 +48,8 @@ export default async function WorkPage({ params }: { params: Promise<{ workSlug:
         <section className="conversation-panel">
           <div className="panel-heading"><div><span className="live-dot" />Conversation</div><span>{dayGroups.at(-1)?.label ?? "오늘"}</span></div>
           <div className="messages">
-            {dayGroups.map((group, index) => (
-              <div key={`${group.label}-${index}`}>
+            {dayGroups.map((group) => (
+              <div key={group.key}>
                 <div className="day-divider"><span>{group.label}</span></div>
                 {group.messages.map((message) => (
                   <article className={`message ${message.role}`} key={message.id}>

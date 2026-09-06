@@ -24,6 +24,11 @@ function dayKey(date: Date): string {
   return dayKeyFormatter.format(date);
 }
 
+/** Year-aware calendar-day key (e.g. "2026-09-06"), for grouping — never for display. */
+export function formatDayKey(iso: string): string {
+  return dayKey(new Date(iso));
+}
+
 function daysBetween(fromKey: string, toKey: string): number {
   return Math.round((Date.parse(toKey) - Date.parse(fromKey)) / 86_400_000);
 }
