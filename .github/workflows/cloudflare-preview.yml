@@ -116,8 +116,23 @@ jobs:
         run: npm ci
 
       - name: Delete preview Worker
-        continue-on-error: true
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        run: npx wrangler delete --name "workgraph-pr-${{ github.event.pull_request.number }}"
+        run: |
+          set +e
+          output=$(npx wrangler delete --name "workgraph-pr-${{ github.event.pull_request.number }}" 2>&1)
+          status=$?
+          echo "$output"
+          if [ $status -eq 0 ]; then
+            exit 0
+          fi
+          # Only tolerate "there was nothing to delete" — anything else fails
+          # the job so an orphaned Worker (still holding the service role key)
+          # doesn't go unnoticed.
+          if echo "$output" | grep -qiE "not found|does not exist|script_not_found|10007"; then
+            echo "Preview Worker already gone — treating as success."
+            exit 0
+          fi
+          echo "::error::Failed to delete preview Worker workgraph-pr-${{ github.event.pull_request.number }} — it may still be publicly reachable with the preview secrets. Delete it manually and investigate."
+          exit 1
