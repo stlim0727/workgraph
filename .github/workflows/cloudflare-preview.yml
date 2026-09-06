@@ -121,7 +121,7 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
           set +e
-          output=$(npx wrangler delete --name "workgraph-pr-${{ github.event.pull_request.number }}" 2>&1)
+          output=$(npx wrangler delete --force --name "workgraph-pr-${{ github.event.pull_request.number }}" 2>&1)
           status=$?
           echo "$output"
           if [ $status -eq 0 ]; then

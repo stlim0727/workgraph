@@ -53,7 +53,12 @@ npx wrangler secret put SUPABASE_SERVICE_ROLE_KEY
 npm run deploy               # builds and deploys
 ```
 
-`npm run preview` builds and runs the Worker locally via `wrangler dev` for a closer-to-production smoke test than `next dev`.
+`npm run preview` builds and runs the Worker locally via `wrangler dev` for a closer-to-production smoke test than `next dev`. `wrangler dev` reads secrets from `.dev.vars`, not `.env.local` — copy `.dev.vars.example` to `.dev.vars` and fill in the same Supabase values first, or every dynamic page request will fail with a missing-credentials error:
+
+```bash
+cp .dev.vars.example .dev.vars
+npm run preview
+```
 
 ### PR previews
 
