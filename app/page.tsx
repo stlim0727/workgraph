@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { PageShell } from "@/components/app-shell";
 import { ThingPill } from "@/components/thing-pill";
-import { getThingsForWork } from "@/lib/data";
+import { getThingsForWorks } from "@/lib/data";
 import { getSupabaseServerClient } from "@/lib/supabase-server";
 import type { Work } from "@/lib/data";
 import { formatRelativeKorean } from "@/lib/format";
@@ -30,9 +30,8 @@ async function listActiveWorks(): Promise<Work[]> {
 
 export default async function Home() {
   const works = await listActiveWorks();
-  const worksWithThings = await Promise.all(
-    works.map(async (work) => ({ work, things: await getThingsForWork(work.id) }))
-  );
+  const thingsByWork = await getThingsForWorks(works.map((work) => work.id));
+  const worksWithThings = works.map((work) => ({ work, things: thingsByWork.get(work.id) ?? [] }));
 
   return (
     <PageShell className="home-page">

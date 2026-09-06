@@ -88,6 +88,27 @@ export async function getThingsForWork(workId: string): Promise<Thing[]> {
   return (data ?? []).map(toThing);
 }
 
+export async function getThingsForWorks(workIds: string[]): Promise<Map<string, Thing[]>> {
+  const byWork = new Map<string, Thing[]>();
+  if (workIds.length === 0) return byWork;
+
+  const supabase = getSupabaseServerClient();
+  const { data, error } = await supabase
+    .from("things")
+    .select("id, work_id, slug, name, type, description, data")
+    .in("work_id", workIds)
+    .order("created_at", { ascending: true });
+
+  if (error) throw error;
+  for (const row of data ?? []) {
+    const thing = toThing(row);
+    const existing = byWork.get(thing.workId);
+    if (existing) existing.push(thing);
+    else byWork.set(thing.workId, [thing]);
+  }
+  return byWork;
+}
+
 export async function getThingBySlug(workId: string, thingSlug: string): Promise<Thing | null> {
   const supabase = getSupabaseServerClient();
   const { data, error } = await supabase
@@ -143,6 +164,7 @@ export async function getRelatedThings(workId: string, thingId: string): Promise
   const { data: things, error: thingsError } = await supabase
     .from("things")
     .select("id, work_id, slug, name, type, description, data")
+    .eq("work_id", workId)
     .in("id", Array.from(relatedIds));
 
   if (thingsError) throw thingsError;
