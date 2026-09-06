@@ -131,7 +131,11 @@ jobs:
           # Only tolerate "there was nothing to delete" — anything else fails
           # the job so an orphaned Worker (still holding the service role key)
           # doesn't go unnoticed.
-          if echo "$output" | grep -qiE "not found|does not exist|script_not_found|10007"; then
+          # Cloudflare's script_not_found / error 10007 specifically means "this
+          # Worker script doesn't exist" — unlike a generic "not found", it can't
+          # be confused with an unrelated failure (e.g. a stale account ID
+          # producing an "account not found" error), which must still fail loudly.
+          if echo "$output" | grep -qiE "script_not_found|\\b10007\\b"; then
             echo "Preview Worker already gone — treating as success."
             exit 0
           fi
