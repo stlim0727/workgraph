@@ -50,6 +50,10 @@ button { color: inherit; cursor: pointer; }
 .work-card-top, .work-card-footer { padding: 17px 22px; display: flex; align-items: center; justify-content: space-between; }
 .status { display: inline-flex; align-items: center; gap: 7px; color: var(--green); font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .6px; }
 .status i, .live-dot { width: 7px; height: 7px; border-radius: 50%; background: #57a47d; box-shadow: 0 0 0 3px #e8f2ec; }
+.status.status-paused { color: #b3812f; }
+.status.status-paused i { background: #d6a24b; box-shadow: 0 0 0 3px #f7eee0; }
+.status.status-done { color: #78746c; }
+.status.status-done i { background: #9b968d; box-shadow: 0 0 0 3px #eeece7; }
 .more { color: #aaa59c; letter-spacing: 2px; }
 .work-card-body { padding: 17px 22px 23px; }.work-card-body h3 { margin: 0 0 10px; font-size: 25px; letter-spacing: -.6px; }.work-card-body p { max-width: 620px; margin: 0; color: var(--muted); font-size: 14px; line-height: 1.65; }
 .work-things { padding: 0 22px 26px; display: flex; flex-wrap: wrap; gap: 7px; }.more-things { padding: 7px 9px; color: #8d8981; font-size: 11px; }

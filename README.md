@@ -6,19 +6,26 @@ This repository currently implements **Phase 0 through Phase 2** from the [Graph
 
 ## Requirements
 
-- Node.js 20.9 or newer
+- Node.js 22 or newer (required by `@supabase/supabase-js`)
 - npm 10 or newer
 - A Supabase project (see below)
 
 ## Local setup
 
-1. Copy `.env.example` to `.env.local` and fill in your Supabase project's URL and service role key (Project Settings → API in the Supabase dashboard):
+1. Create a Supabase project, then apply the migrations in `supabase/migrations/` to it (in order) via the [Supabase CLI](https://supabase.com/docs/guides/local-development/cli/getting-started) or by pasting each file into the SQL editor:
+
+   ```bash
+   supabase link --project-ref <your-project-ref>
+   supabase db push
+   ```
+
+2. Copy `.env.example` to `.env.local` and fill in your Supabase project's URL and service role key (Project Settings → API in the Supabase dashboard):
 
    ```bash
    cp .env.example .env.local
    ```
 
-2. Install and run:
+3. Install and run:
 
    ```bash
    npm install
@@ -33,7 +40,7 @@ Open [http://localhost:3000](http://localhost:3000). The prototype includes:
 
 ## Database
 
-Schema and seed data live in Supabase migrations (`works`, `things`, `relations`, `messages`, `events`), applied via the Supabase MCP tooling used to build this project. Row Level Security is enabled on every table with no policies — all reads happen server-side through `lib/data.ts` using the service role key, which bypasses RLS. The service role key must never be exposed to the client bundle.
+Schema and seed data live in `supabase/migrations/` (`works`, `things`, `relations`, `messages`, `events`, plus the dogfood seed data). Row Level Security is enabled on every table with no policies — all reads happen server-side through `lib/data.ts` using the service role key, which bypasses RLS. The service role key must never be exposed to the client bundle.
 
 ## Checks
 

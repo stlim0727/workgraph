@@ -22,7 +22,7 @@ export type Thing = {
 
 export type Message = {
   id: string;
-  role: "user" | "assistant" | "system";
+  role: "user" | "assistant";
   content: string;
   createdAt: string;
 };
@@ -102,21 +102,51 @@ export async function getThingBySlug(workId: string, thingSlug: string): Promise
   return toThing(data);
 }
 
-export async function getMessagesForWork(workId: string): Promise<Message[]> {
+export async function getMessagesForWork(workId: string, limit = 50): Promise<Message[]> {
   const supabase = getSupabaseServerClient();
   const { data, error } = await supabase
     .from("messages")
     .select("id, role, content, created_at")
     .eq("work_id", workId)
-    .order("created_at", { ascending: true });
+    .neq("role", "system")
+    .order("created_at", { ascending: false })
+    .limit(limit);
 
   if (error) throw error;
-  return (data ?? []).map((row) => ({
-    id: row.id,
-    role: row.role,
-    content: row.content,
-    createdAt: row.created_at,
-  }));
+  return (data ?? [])
+    .map((row) => ({
+      id: row.id,
+      role: row.role as "user" | "assistant",
+      content: row.content,
+      createdAt: row.created_at,
+    }))
+    .reverse();
+}
+
+export async function getRelatedThings(workId: string, thingId: string): Promise<Thing[]> {
+  const supabase = getSupabaseServerClient();
+  const { data: relations, error: relationsError } = await supabase
+    .from("relations")
+    .select("from_thing_id, to_thing_id")
+    .eq("work_id", workId)
+    .or(`from_thing_id.eq.${thingId},to_thing_id.eq.${thingId}`);
+
+  if (relationsError) throw relationsError;
+
+  const relatedIds = new Set<string>();
+  for (const row of relations ?? []) {
+    if (row.from_thing_id === thingId) relatedIds.add(row.to_thing_id);
+    if (row.to_thing_id === thingId) relatedIds.add(row.from_thing_id);
+  }
+  if (relatedIds.size === 0) return [];
+
+  const { data: things, error: thingsError } = await supabase
+    .from("things")
+    .select("id, work_id, slug, name, type, description, data")
+    .in("id", Array.from(relatedIds));
+
+  if (thingsError) throw thingsError;
+  return (things ?? []).map(toThing);
 }
 
 export async function getRecentEventsForThing(thingId: string, limit = 5): Promise<ActivityEvent[]> {

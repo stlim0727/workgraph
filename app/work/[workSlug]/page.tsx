@@ -2,10 +2,16 @@ import { notFound } from "next/navigation";
 import { PageShell } from "@/components/app-shell";
 import { Composer } from "@/components/composer";
 import { ThingPill } from "@/components/thing-pill";
-import { getMessagesForWork, getThingsForWork, getWorkBySlug } from "@/lib/data";
-import { formatTime } from "@/lib/format";
+import { getMessagesForWork, getThingsForWork, getWorkBySlug, type Work } from "@/lib/data";
+import { formatDayLabel, formatTime } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
+
+const statusLabel: Record<Work["status"], string> = {
+  active: "Active",
+  paused: "Paused",
+  done: "Done",
+};
 
 export default async function WorkPage({ params }: { params: Promise<{ workSlug: string }> }) {
   const { workSlug } = await params;
@@ -17,23 +23,41 @@ export default async function WorkPage({ params }: { params: Promise<{ workSlug:
     getMessagesForWork(work.id),
   ]);
 
+  const dayGroups: { label: string; messages: typeof messages }[] = [];
+  for (const message of messages) {
+    const label = formatDayLabel(message.createdAt);
+    const currentGroup = dayGroups[dayGroups.length - 1];
+    if (currentGroup && currentGroup.label === label) {
+      currentGroup.messages.push(message);
+    } else {
+      dayGroups.push({ label, messages: [message] });
+    }
+  }
+
   return (
     <PageShell backHref="/" context={work.title} className="work-page">
       <section className="work-heading">
-        <div><span className="status"><i /> Active</span><h1>{work.title}</h1><p>{work.summary}</p></div>
+        <div>
+          <span className={`status status-${work.status}`}><i /> {statusLabel[work.status]}</span>
+          <h1>{work.title}</h1><p>{work.summary}</p>
+        </div>
         <button className="secondary-button">•••</button>
       </section>
 
       <div className="work-layout">
         <section className="conversation-panel">
-          <div className="panel-heading"><div><span className="live-dot" />Conversation</div><span>오늘</span></div>
+          <div className="panel-heading"><div><span className="live-dot" />Conversation</div><span>{dayGroups.at(-1)?.label ?? "오늘"}</span></div>
           <div className="messages">
-            <div className="day-divider"><span>오늘</span></div>
-            {messages.map((message) => (
-              <article className={`message ${message.role}`} key={message.id}>
-                <div className="message-avatar">{message.role === "user" ? "나" : <span className="mini-mark">✦</span>}</div>
-                <div><div className="message-meta"><strong>{message.role === "user" ? "나" : "Workgraph"}</strong><time>{formatTime(message.createdAt)}</time></div><p>{message.content}</p></div>
-              </article>
+            {dayGroups.map((group, index) => (
+              <div key={`${group.label}-${index}`}>
+                <div className="day-divider"><span>{group.label}</span></div>
+                {group.messages.map((message) => (
+                  <article className={`message ${message.role}`} key={message.id}>
+                    <div className="message-avatar">{message.role === "user" ? "나" : <span className="mini-mark">✦</span>}</div>
+                    <div><div className="message-meta"><strong>{message.role === "user" ? "나" : "Workgraph"}</strong><time>{formatTime(message.createdAt)}</time></div><p>{message.content}</p></div>
+                  </article>
+                ))}
+              </div>
             ))}
           </div>
           <Composer />

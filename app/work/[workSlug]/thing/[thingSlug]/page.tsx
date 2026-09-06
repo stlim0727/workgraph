@@ -3,7 +3,7 @@ import Link from "next/link";
 import { PageShell } from "@/components/app-shell";
 import { Composer } from "@/components/composer";
 import { ThingPill } from "@/components/thing-pill";
-import { getRecentEventsForThing, getThingBySlug, getThingsForWork, getWorkBySlug } from "@/lib/data";
+import { getRecentEventsForThing, getRelatedThings, getThingBySlug, getWorkBySlug } from "@/lib/data";
 import { formatEventLabel, formatRelativeKorean } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
@@ -16,11 +16,10 @@ export default async function ThingPage({ params }: { params: Promise<{ workSlug
   const thing = await getThingBySlug(work.id, thingSlug);
   if (!thing) notFound();
 
-  const [things, activity] = await Promise.all([
-    getThingsForWork(work.id),
+  const [related, activity] = await Promise.all([
+    getRelatedThings(work.id, thing.id),
     getRecentEventsForThing(thing.id),
   ]);
-  const related = things.filter((item) => item.slug !== thing.slug).slice(0, 3);
 
   return (
     <PageShell backHref={`/work/${work.slug}`} context={work.title} className="thing-page">
