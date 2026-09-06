@@ -57,13 +57,18 @@ npm run deploy               # builds and deploys
 
 ### PR previews
 
-`.github/workflows/cloudflare-preview.yml` deploys every pull request to its own Worker (`workgraph-pr-<number>`) and comments the live URL on the PR, updating that comment on every subsequent push. The Worker is deleted when the PR closes. This needs four repository secrets under **Settings → Secrets and variables → Actions**:
+`.github/workflows/cloudflare-preview.yml` deploys every pull request to its own Worker (`workgraph-pr-<number>`) and comments the live URL on the PR, updating that comment on every subsequent push. The Worker is deleted when the PR closes.
 
-- `CLOUDFLARE_API_TOKEN` — a token with Workers Scripts edit permission ([create one](https://dash.cloudflare.com/profile/api-tokens))
+**Setup:** create a GitHub Environment named `cloudflare-preview` (**Settings → Environments → New environment**) and add four secrets to it (not plain repo secrets — the workflow's `deploy` and `cleanup` jobs both target this environment):
+
+- `CLOUDFLARE_API_TOKEN` — a token scoped to **Workers Scripts: Edit** only ([create one](https://dash.cloudflare.com/profile/api-tokens)), not a broader account-level token
 - `CLOUDFLARE_ACCOUNT_ID` — found on the right sidebar of any zone/account overview page in the Cloudflare dashboard
 - `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` — same values as `.env.local`
 
-All PR previews currently point at the same Supabase project as local development — there's no separate per-preview or staging database yet.
+**Security notes:**
+
+- For a same-repo PR (not a fork), GitHub Actions runs this workflow with the PR branch's own code and gives it access to whichever secrets the target environment holds. Add **required reviewers** to the `cloudflare-preview` environment (in its settings) so a human approves each run before secrets are exposed — otherwise anyone who can push to a branch in this repo can read `SUPABASE_SERVICE_ROLE_KEY` or use `CLOUDFLARE_API_TOKEN` from workflow code. Required reviewers also gate the `cleanup` job on PR close, which needs the same token to delete the preview Worker — an accepted tradeoff (one extra approval click) for one shared environment.
+- All PR previews currently point at the **same Supabase project as local development** — there's no separate, disposable preview database yet, so treat the service role key as fully privileged over real data when deciding on required reviewers. Isolating previews onto their own low-privilege Supabase project is a good follow-up once you're not at the free-tier project limit.
 
 ## Checks
 
