@@ -10,7 +10,9 @@ concurrency:
 
 jobs:
   deploy:
-    if: github.event.action != 'closed'
+    # Fork PRs never receive environment/repo secrets, so this would just fail
+    # loudly on the first authenticated wrangler command — skip it instead.
+    if: github.event.action != 'closed' && github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     # Requires a "cloudflare-preview" GitHub Environment (Settings > Environments).
     # Add the four secrets below to that environment rather than repo-level secrets,
@@ -95,7 +97,8 @@ jobs:
             }
 
   cleanup:
-    if: github.event.action == 'closed'
+    # Mirror the deploy guard — a fork PR never had a preview Worker deployed.
+    if: github.event.action == 'closed' && github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     # Same environment as `deploy` so it can read CLOUDFLARE_API_TOKEN/ACCOUNT_ID.
     # If you add required reviewers to this environment, closing a PR will also

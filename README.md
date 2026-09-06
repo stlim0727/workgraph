@@ -57,7 +57,7 @@ npm run deploy               # builds and deploys
 
 ### PR previews
 
-`.github/workflows/cloudflare-preview.yml` deploys every pull request to its own Worker (`workgraph-pr-<number>`) and comments the live URL on the PR, updating that comment on every subsequent push. The Worker is deleted when the PR closes.
+`.github/workflows/cloudflare-preview.yml` deploys every same-repository pull request to its own Worker (`workgraph-pr-<number>`) and comments the live URL on the PR, updating that comment on every subsequent push. The Worker is deleted when the PR closes. PRs from forks are skipped — GitHub withholds environment secrets from fork PRs, so there's nothing to deploy with.
 
 **Setup:** create a GitHub Environment named `cloudflare-preview` (**Settings → Environments → New environment**) and add four secrets to it (not plain repo secrets — the workflow's `deploy` and `cleanup` jobs both target this environment):
 
