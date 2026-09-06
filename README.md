@@ -6,7 +6,7 @@ This repository currently implements **Phase 0 through Phase 2** from the [Graph
 
 ## Requirements
 
-- Node.js 22 or newer (required by `@supabase/supabase-js`)
+- Node.js 22.12 or newer (`@supabase/supabase-js` requires Node 22+; the Cloudflare/Wrangler toolchain's `yargs` dependency requires 22.12+ specifically)
 - npm 10 or newer
 - A Supabase project (see below)
 
