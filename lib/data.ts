@@ -82,7 +82,8 @@ export async function getThingsForWork(workId: string): Promise<Thing[]> {
     .from("things")
     .select("id, work_id, slug, name, type, description, data")
     .eq("work_id", workId)
-    .order("created_at", { ascending: true });
+    .order("created_at", { ascending: true })
+    .order("seq", { ascending: true });
 
   if (error) throw error;
   return (data ?? []).map(toThing);
@@ -97,7 +98,8 @@ export async function getThingsForWorks(workIds: string[]): Promise<Map<string, 
     .from("things")
     .select("id, work_id, slug, name, type, description, data")
     .in("work_id", workIds)
-    .order("created_at", { ascending: true });
+    .order("created_at", { ascending: true })
+    .order("seq", { ascending: true });
 
   if (error) throw error;
   for (const row of data ?? []) {
