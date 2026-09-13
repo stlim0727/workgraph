@@ -22,3 +22,6 @@ next-env.d.ts
 
 # local visual verification
 /artifacts/
+
+# Supabase CLI local state
+/supabase/.temp/
