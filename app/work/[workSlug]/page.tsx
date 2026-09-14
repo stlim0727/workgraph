@@ -2,11 +2,16 @@ import { notFound } from "next/navigation";
 import { PageShell } from "@/components/app-shell";
 import { Composer } from "@/components/composer";
 import { ThingPill } from "@/components/thing-pill";
-import { messages, things, work } from "@/lib/mock-data";
+import { createThing, sendMessage } from "@/app/actions";
+import { getWorkBySlug, listMessages, listThings } from "@/lib/data";
+import { isSupabaseConfigured } from "@/lib/supabase";
 
 export default async function WorkPage({ params }: { params: Promise<{ workSlug: string }> }) {
   const { workSlug } = await params;
-  if (workSlug !== work.slug) notFound();
+  const work = await getWorkBySlug(workSlug);
+  if (!work) notFound();
+  const [things, messages] = await Promise.all([listThings(work.id), listMessages(work.id)]);
+  const messageAction = isSupabaseConfigured() ? sendMessage.bind(null, work.id, work.slug) : undefined;
 
   return (
     <PageShell backHref="/" context={work.title} className="work-page">
@@ -20,20 +25,27 @@ export default async function WorkPage({ params }: { params: Promise<{ workSlug:
           <div className="panel-heading"><div><span className="live-dot" />Conversation</div><span>오늘</span></div>
           <div className="messages">
             <div className="day-divider"><span>오늘</span></div>
-            {messages.map((message, index) => (
-              <article className={`message ${message.role}`} key={index}>
+            {messages.map((message) => (
+              <article className={`message ${message.role}`} key={message.id}>
                 <div className="message-avatar">{message.role === "user" ? "나" : <span className="mini-mark">✦</span>}</div>
-                <div><div className="message-meta"><strong>{message.role === "user" ? "나" : "Workgraph"}</strong><time>{message.time}</time></div><p>{message.content}</p></div>
+                <div><div className="message-meta"><strong>{message.role === "user" ? "나" : "Workgraph"}</strong><time>{new Intl.DateTimeFormat("ko-KR", { hour: "2-digit", minute: "2-digit" }).format(new Date(message.createdAt))}</time></div><p>{message.content}</p></div>
               </article>
             ))}
           </div>
-          <Composer />
+          <Composer action={messageAction} />
         </section>
 
         <aside className="things-panel">
-          <div className="panel-heading"><div>Things <span className="count">{things.length}</span></div><button aria-label="Thing 추가">＋</button></div>
+          <div className="panel-heading"><div>Things <span className="count">{things.length}</span></div></div>
           <p className="panel-description">계속 기억하고 참조할 것들</p>
-          <div className="things-list">{things.map((thing) => <ThingPill key={thing.slug} thing={thing} />)}</div>
+          <div className="things-list">{things.map((thing) => <ThingPill key={thing.id} thing={thing} workSlug={work.slug} />)}</div>
+          {isSupabaseConfigured() ? <details className="inline-create"><summary>＋ Add Thing</summary><form action={createThing} className="mutation-form">
+            <input type="hidden" name="workId" value={work.id} /><input type="hidden" name="workSlug" value={work.slug} />
+            <label>Name<input name="name" required maxLength={80} placeholder="prototype" /></label>
+            <label>Type<input name="type" required maxLength={40} placeholder="concept" /></label>
+            <label>Description<textarea name="description" maxLength={500} rows={3} /></label>
+            <button className="primary-button" type="submit">Create Thing</button>
+          </form></details> : null}
         </aside>
       </div>
     </PageShell>
