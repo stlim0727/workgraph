@@ -36,6 +36,7 @@ export type Relation = {
 export type Message = {
   id: string;
   workId: string;
+  sequence: number;
   role: "user" | "assistant" | "system";
   content: string;
   createdAt: string;

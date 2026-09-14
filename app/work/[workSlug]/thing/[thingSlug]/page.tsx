@@ -3,7 +3,7 @@ import Link from "next/link";
 import { PageShell } from "@/components/app-shell";
 import { Composer } from "@/components/composer";
 import { ThingPill } from "@/components/thing-pill";
-import { relateThings, updateThing } from "@/app/actions";
+import { relateThings, sendMessage, updateThing } from "@/app/actions";
 import { getThingBySlug, getWorkBySlug, listRelatedThings, listThingEvents, listThings } from "@/lib/data";
 import { isSupabaseConfigured } from "@/lib/supabase";
 
@@ -15,6 +15,7 @@ export default async function ThingPage({ params }: { params: Promise<{ workSlug
   if (!thing) notFound();
   const [related, events, things] = await Promise.all([listRelatedThings(work.id, thing.id), listThingEvents(work.id, thing.id), listThings(work.id)]);
   const candidates = things.filter((item) => item.id !== thing.id && !related.some((relatedThing) => relatedThing.id === item.id));
+  const messageAction = isSupabaseConfigured() ? sendMessage.bind(null, work.id, work.slug) : undefined;
 
   return (
     <PageShell backHref={`/work/${work.slug}`} context={work.title} className="thing-page">
@@ -50,7 +51,7 @@ export default async function ThingPage({ params }: { params: Promise<{ workSlug
         </article>
         <aside className="ask-panel">
           <div><p className="eyebrow">ASK ABOUT THIS THING</p><h2>@{thing.name}의 맥락에서<br />대화를 이어가세요.</h2><p>현재 Work와 연결된 Things를 함께 살펴봐요.</p></div>
-          <Composer mention={thing.name} placeholder="이 Thing에 대해 물어보세요…" />
+          <Composer action={messageAction} mention={thing.name} placeholder="이 Thing에 대해 물어보세요…" />
           <Link className="back-to-work" href={`/work/${work.slug}`}>전체 대화로 돌아가기 <span>→</span></Link>
         </aside>
       </div>

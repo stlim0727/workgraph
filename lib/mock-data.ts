@@ -36,10 +36,11 @@ export const things: Thing[] = [
 }));
 
 export const messages: Message[] = [
-  { id: "mock-message-1", workId, role: "user", content: "지금 우리가 가장 먼저 검증해야 하는 게 뭐야?", createdAt: "2026-08-31T01:36:00.000Z" },
+  { id: "mock-message-1", workId, sequence: 1, role: "user", content: "지금 우리가 가장 먼저 검증해야 하는 게 뭐야?", createdAt: "2026-08-31T01:36:00.000Z" },
   {
     id: "mock-message-2",
     workId,
+    sequence: 2,
     role: "assistant",
     content: "핵심은 며칠 뒤에도 이 공간으로 돌아와 ‘어디까지 왔지?’라고 자연스럽게 묻게 되는지예요. 지금은 @prototype으로 그 흐름을 최대한 작게 확인하는 단계예요.",
     createdAt: "2026-08-31T01:37:00.000Z",

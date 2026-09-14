@@ -4,6 +4,7 @@ import { Composer } from "@/components/composer";
 import { ThingPill } from "@/components/thing-pill";
 import { createThing, sendMessage } from "@/app/actions";
 import { getWorkBySlug, listMessages, listThings } from "@/lib/data";
+import { conversationDateKey, formatConversationDay, formatMessageTime } from "@/lib/format";
 import { isSupabaseConfigured } from "@/lib/supabase";
 
 export default async function WorkPage({ params }: { params: Promise<{ workSlug: string }> }) {
@@ -12,6 +13,13 @@ export default async function WorkPage({ params }: { params: Promise<{ workSlug:
   if (!work) notFound();
   const [things, messages] = await Promise.all([listThings(work.id), listMessages(work.id)]);
   const messageAction = isSupabaseConfigured() ? sendMessage.bind(null, work.id, work.slug) : undefined;
+  const messageGroups = messages.reduce<Array<{ key: string; label: string; messages: typeof messages }>>((groups, message) => {
+    const key = conversationDateKey(message.createdAt);
+    const current = groups.at(-1);
+    if (current?.key === key) current.messages.push(message);
+    else groups.push({ key, label: formatConversationDay(message.createdAt), messages: [message] });
+    return groups;
+  }, []);
 
   return (
     <PageShell backHref="/" context={work.title} className="work-page">
@@ -22,15 +30,18 @@ export default async function WorkPage({ params }: { params: Promise<{ workSlug:
 
       <div className="work-layout">
         <section className="conversation-panel">
-          <div className="panel-heading"><div><span className="live-dot" />Conversation</div><span>오늘</span></div>
+          <div className="panel-heading"><div><span className="live-dot" />Conversation</div><span>{messageGroups.at(-1)?.label ?? "대화 없음"}</span></div>
           <div className="messages">
-            <div className="day-divider"><span>오늘</span></div>
-            {messages.map((message) => (
-              <article className={`message ${message.role}`} key={message.id}>
-                <div className="message-avatar">{message.role === "user" ? "나" : <span className="mini-mark">✦</span>}</div>
-                <div><div className="message-meta"><strong>{message.role === "user" ? "나" : "Workgraph"}</strong><time>{new Intl.DateTimeFormat("ko-KR", { hour: "2-digit", minute: "2-digit" }).format(new Date(message.createdAt))}</time></div><p>{message.content}</p></div>
-              </article>
-            ))}
+            {messageGroups.map((group) => <section className="message-day" key={group.key}>
+              <div className="day-divider"><span>{group.label}</span></div>
+              {group.messages.map((message) => (
+                <article className={`message ${message.role}`} key={message.id}>
+                  <div className="message-avatar">{message.role === "user" ? "나" : <span className="mini-mark">✦</span>}</div>
+                  <div><div className="message-meta"><strong>{message.role === "user" ? "나" : "Workgraph"}</strong><time dateTime={message.createdAt}>{formatMessageTime(message.createdAt)}</time></div><p>{message.content}</p></div>
+                </article>
+              ))}
+            </section>)}
+            {!messages.length ? <p className="empty-state">첫 메시지로 대화를 시작하세요.</p> : null}
           </div>
           <Composer action={messageAction} />
         </section>

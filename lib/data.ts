@@ -20,7 +20,7 @@ function mapThing(row: Record<string, unknown>): Thing {
 }
 
 function mapMessage(row: Record<string, unknown>): Message {
-  return { id: String(row.id), workId: String(row.work_id), role: row.role as Message["role"], content: String(row.content), createdAt: String(row.created_at) };
+  return { id: String(row.id), workId: String(row.work_id), sequence: Number(row.sequence), role: row.role as Message["role"], content: String(row.content), createdAt: String(row.created_at) };
 }
 
 function mapEvent(row: Record<string, unknown>): Event {
@@ -57,7 +57,7 @@ export const getThingBySlug = cache(async (workId: string, slug: string): Promis
 
 export const listMessages = cache(async (workId: string): Promise<Message[]> => {
   if (!isSupabaseConfigured()) return workId === mockWork.id ? mockMessages : [];
-  const { data, error } = await getSupabase().from("messages").select("*").eq("work_id", workId).order("created_at", { ascending: false }).limit(50);
+  const { data, error } = await getSupabase().from("messages").select("*").eq("work_id", workId).order("sequence", { ascending: false }).limit(50);
   if (error) throw error;
   return data.map(mapMessage).reverse();
 });
@@ -76,7 +76,7 @@ export const listRelatedThings = cache(async (workId: string, thingId: string): 
 
 export const listThingEvents = cache(async (workId: string, thingId: string): Promise<Event[]> => {
   if (!isSupabaseConfigured()) return [];
-  const { data, error } = await getSupabase().from("events").select("*").eq("work_id", workId).contains("payload", { thing_id: thingId }).order("created_at", { ascending: false }).limit(5);
+  const { data, error } = await getSupabase().from("events").select("*").eq("work_id", workId).or(`payload->>thing_id.eq.${thingId},payload->>to_thing_id.eq.${thingId}`).order("created_at", { ascending: false }).limit(5);
   if (error) throw error;
   return data.map(mapEvent);
 });
