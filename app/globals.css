@@ -103,3 +103,17 @@ button { color: inherit; cursor: pointer; }
 .because-chain li { display: grid; grid-template-columns: 74px 1fr; gap: 8px; font-size: 12px; line-height: 1.45; }
 .because-chain li + li::before { content: "↑ because"; grid-column: 2; font-size: 9px; opacity: .35; margin-top: -3px; }
 @media (min-width: 900px) { .next-moves-list { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+
+
+.semantic-experiment { margin: -10px 0 24px; padding: 16px 18px; border: 1px dashed var(--line, #ddd); border-radius: 16px; }
+.semantic-experiment-heading { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.semantic-experiment-heading h2 { margin: 4px 0 0; font-size: 16px; }
+.semantic-experiment > p { font-size: 12px; line-height: 1.55; opacity: .68; }
+.experiment-verdict { font-size: 11px; font-weight: 700; letter-spacing: .08em; opacity: .5; }
+.experiment-table { display: grid; margin: 12px 0; border-top: 1px solid var(--line, #e8e8e8); }
+.experiment-row { display: grid; grid-template-columns: minmax(0, 1fr) 72px 72px 44px; gap: 8px; padding: 8px 0; border-bottom: 1px solid var(--line, #e8e8e8); font-size: 11px; align-items: center; }
+.experiment-row span:not(:first-child), .experiment-row strong { text-align: right; }
+.experiment-header { font-size: 9px; text-transform: uppercase; letter-spacing: .08em; opacity: .5; }
+.semantic-experiment details { font-size: 11px; opacity: .68; }
+.semantic-experiment details summary { cursor: pointer; font-weight: 650; }
+.semantic-experiment code { font-size: 10px; }
