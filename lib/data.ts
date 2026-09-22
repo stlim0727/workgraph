@@ -1,6 +1,7 @@
 import "server-only";
 import { cache } from "react";
 import { messages as mockMessages, things as mockThings, work as mockWork } from "@/lib/mock-data";
+import { semanticRelations, semanticThings } from "@/lib/semantic-fixture";
 import { getSupabase, isSupabaseConfigured } from "@/lib/supabase";
 import type { Event, Message, Relation, Thing, Work, WorkStatus } from "@/lib/types";
 
@@ -42,14 +43,14 @@ export const getWorkBySlug = cache(async (slug: string): Promise<Work | null> =>
 });
 
 export const listThings = cache(async (workId: string): Promise<Thing[]> => {
-  if (!isSupabaseConfigured()) return workId === mockWork.id ? mockThings : [];
+  if (!isSupabaseConfigured()) return workId === mockWork.id ? [...mockThings, ...semanticThings] : [];
   const { data, error } = await getSupabase().from("things").select("*").eq("work_id", workId).order("created_at");
   if (error) throw error;
   return data.map(mapThing);
 });
 
 export const getThingBySlug = cache(async (workId: string, slug: string): Promise<Thing | null> => {
-  if (!isSupabaseConfigured()) return mockThings.find((thing) => thing.workId === workId && thing.slug === slug) ?? null;
+  if (!isSupabaseConfigured()) return [...mockThings, ...semanticThings].find((thing) => thing.workId === workId && thing.slug === slug) ?? null;
   const { data, error } = await getSupabase().from("things").select("*").eq("work_id", workId).eq("slug", slug).maybeSingle();
   if (error) throw error;
   return data ? mapThing(data) : null;
@@ -62,8 +63,19 @@ export const listMessages = cache(async (workId: string): Promise<Message[]> => 
   return data.map(mapMessage);
 });
 
+export const listRelations = cache(async (workId: string): Promise<Relation[]> => {
+  if (!isSupabaseConfigured()) return workId === mockWork.id ? semanticRelations : [];
+  const { data, error } = await getSupabase().from("relations").select("*").eq("work_id", workId).order("created_at");
+  if (error) throw error;
+  return data.map((row: Record<string, unknown>) => ({ id: String(row.id), workId: String(row.work_id), fromThingId: String(row.from_thing_id), type: String(row.type), toThingId: String(row.to_thing_id), metadata: (row.metadata ?? {}) as Record<string, unknown>, createdAt: String(row.created_at) }));
+});
+
 export const listRelatedThings = cache(async (workId: string, thingId: string): Promise<Thing[]> => {
-  if (!isSupabaseConfigured()) return mockThings.filter((thing) => thing.id !== thingId).slice(0, 3);
+  if (!isSupabaseConfigured()) {
+    const all = [...mockThings, ...semanticThings];
+    const ids = semanticRelations.filter((relation) => relation.fromThingId === thingId || relation.toThingId === thingId).map((relation) => relation.fromThingId === thingId ? relation.toThingId : relation.fromThingId);
+    return all.filter((thing) => ids.includes(thing.id));
+  }
   const supabase = getSupabase();
   const { data: relations, error } = await supabase.from("relations").select("*").eq("work_id", workId).or(`from_thing_id.eq.${thingId},to_thing_id.eq.${thingId}`);
   if (error) throw error;
