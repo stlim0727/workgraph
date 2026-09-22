@@ -18,7 +18,7 @@ export type BenchmarkBundle = {
 function serialize(snapshot: WorkSnapshot) {
   return JSON.stringify(
     {
-      work: { id: snapshot.work.id, name: snapshot.work.name, description: snapshot.work.description },
+      work: { id: snapshot.work.id, title: snapshot.work.title, summary: snapshot.work.summary },
       things: snapshot.things.map(({ id, type, description, name }) => ({ id, type, text: description || name })),
       relations: snapshot.relations.map(({ id, fromThingId, type, toThingId }) => ({
         id,
