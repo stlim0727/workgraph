@@ -2,15 +2,18 @@ import { notFound } from "next/navigation";
 import { PageShell } from "@/components/app-shell";
 import { Composer } from "@/components/composer";
 import { ThingPill } from "@/components/thing-pill";
+import { NextMoves } from "@/components/next-moves";
 import { createThing } from "@/app/actions";
-import { getWorkBySlug, listMessages, listThings } from "@/lib/data";
+import { getWorkBySlug, listMessages, listRelations, listThings } from "@/lib/data";
+import { deriveNextMoves } from "@/lib/semantic-next-moves";
 import { isSupabaseConfigured } from "@/lib/supabase";
 
 export default async function WorkPage({ params }: { params: Promise<{ workSlug: string }> }) {
   const { workSlug } = await params;
   const work = await getWorkBySlug(workSlug);
   if (!work) notFound();
-  const [things, messages] = await Promise.all([listThings(work.id), listMessages(work.id)]);
+  const [things, messages, relations] = await Promise.all([listThings(work.id), listMessages(work.id), listRelations(work.id)]);
+  const nextMoves = deriveNextMoves({ work, things, relations });
 
   return (
     <PageShell backHref="/" context={work.title} className="work-page">
@@ -18,6 +21,8 @@ export default async function WorkPage({ params }: { params: Promise<{ workSlug:
         <div><span className="status"><i /> Active</span><h1>{work.title}</h1><p>{work.summary}</p></div>
         <button className="secondary-button">•••</button>
       </section>
+
+      <NextMoves result={nextMoves} things={things} />
 
       <div className="work-layout">
         <section className="conversation-panel">
