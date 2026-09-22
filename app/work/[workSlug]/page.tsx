@@ -4,6 +4,7 @@ import { Composer } from "@/components/composer";
 import { ThingPill } from "@/components/thing-pill";
 import { NextMoves } from "@/components/next-moves";
 import { SemanticExperiment } from "@/components/semantic-experiment";
+import { BenchmarkBundle } from "@/components/benchmark-bundle";
 import { createThing } from "@/app/actions";
 import { getWorkBySlug, listMessages, listRelations, listThings } from "@/lib/data";
 import { deriveNextMoves, runSemanticExperiment } from "@/lib/semantic-next-moves";
@@ -27,6 +28,7 @@ export default async function WorkPage({ params }: { params: Promise<{ workSlug:
 
       <NextMoves result={nextMoves} things={things} />
       <SemanticExperiment result={semanticExperiment} />
+      <BenchmarkBundle snapshot={snapshot} />
 
       <div className="work-layout">
         <section className="conversation-panel">
