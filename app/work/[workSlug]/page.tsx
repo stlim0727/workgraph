@@ -3,9 +3,10 @@ import { PageShell } from "@/components/app-shell";
 import { Composer } from "@/components/composer";
 import { ThingPill } from "@/components/thing-pill";
 import { NextMoves } from "@/components/next-moves";
+import { SemanticExperiment } from "@/components/semantic-experiment";
 import { createThing } from "@/app/actions";
 import { getWorkBySlug, listMessages, listRelations, listThings } from "@/lib/data";
-import { deriveNextMoves } from "@/lib/semantic-next-moves";
+import { deriveNextMoves, runSemanticExperiment } from "@/lib/semantic-next-moves";
 import { isSupabaseConfigured } from "@/lib/supabase";
 
 export default async function WorkPage({ params }: { params: Promise<{ workSlug: string }> }) {
@@ -13,7 +14,9 @@ export default async function WorkPage({ params }: { params: Promise<{ workSlug:
   const work = await getWorkBySlug(workSlug);
   if (!work) notFound();
   const [things, messages, relations] = await Promise.all([listThings(work.id), listMessages(work.id), listRelations(work.id)]);
-  const nextMoves = deriveNextMoves({ work, things, relations });
+  const snapshot = { work, things, relations };
+  const nextMoves = deriveNextMoves(snapshot);
+  const semanticExperiment = runSemanticExperiment(snapshot);
 
   return (
     <PageShell backHref="/" context={work.title} className="work-page">
@@ -23,6 +26,7 @@ export default async function WorkPage({ params }: { params: Promise<{ workSlug:
       </section>
 
       <NextMoves result={nextMoves} things={things} />
+      <SemanticExperiment result={semanticExperiment} />
 
       <div className="work-layout">
         <section className="conversation-panel">
