@@ -117,3 +117,11 @@ button { color: inherit; cursor: pointer; }
 .semantic-experiment details { font-size: 11px; opacity: .68; }
 .semantic-experiment details summary { cursor: pointer; font-weight: 650; }
 .semantic-experiment code { font-size: 10px; }
+
+
+.benchmark-bundle { margin: -10px 0 24px; padding: 16px 18px; border: 1px solid var(--line, #e4e4e4); border-radius: 16px; background: rgba(255,255,255,.45); }
+.benchmark-bundle > p { font-size: 12px; line-height: 1.55; opacity: .68; }
+.benchmark-bundle details { margin-top: 9px; font-size: 11px; }
+.benchmark-bundle summary { cursor: pointer; font-weight: 650; }
+.benchmark-bundle pre { max-height: 320px; overflow: auto; padding: 12px; border-radius: 10px; background: rgba(0,0,0,.04); white-space: pre-wrap; word-break: break-word; font-size: 10px; line-height: 1.45; }
+.benchmark-bundle ol { padding-left: 18px; line-height: 1.55; }
