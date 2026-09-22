@@ -110,3 +110,66 @@ export function blindSnapshot(snapshot: WorkSnapshot): WorkSnapshot {
     relations: snapshot.relations.map((relation) => ({ ...relation, type: "related_to" })),
   };
 }
+
+
+export type ExperimentMetrics = {
+  unresolvedDetected: number;
+  groundedMoves: number;
+  provenanceSteps: number;
+  intentConnectedMoves: number;
+};
+
+export type SemanticExperimentResult = {
+  semantic: NextMovesResult;
+  blinded: NextMovesResult;
+  semanticMetrics: ExperimentMetrics;
+  blindedMetrics: ExperimentMetrics;
+  delta: ExperimentMetrics;
+  interpretation: string;
+};
+
+function metrics(result: NextMovesResult, snapshot: WorkSnapshot): ExperimentMetrics {
+  const typeById = new Map(snapshot.things.map((thing) => [thing.id, thing.type]));
+  return {
+    unresolvedDetected: result.unresolved.length,
+    groundedMoves: result.moves.length,
+    provenanceSteps: result.moves.reduce((sum, move) => sum + move.because.length, 0),
+    intentConnectedMoves: result.moves.filter((move) =>
+      move.because.some((step) => typeById.get(step.thingId) === "intent"),
+    ).length,
+  };
+}
+
+function subtract(a: ExperimentMetrics, b: ExperimentMetrics): ExperimentMetrics {
+  return {
+    unresolvedDetected: a.unresolvedDetected - b.unresolvedDetected,
+    groundedMoves: a.groundedMoves - b.groundedMoves,
+    provenanceSteps: a.provenanceSteps - b.provenanceSteps,
+    intentConnectedMoves: a.intentConnectedMoves - b.intentConnectedMoves,
+  };
+}
+
+export function runSemanticExperiment(snapshot: WorkSnapshot): SemanticExperimentResult {
+  const semantic = deriveNextMoves(snapshot);
+  const blindedSnapshot = blindSnapshot(snapshot);
+  const blinded = deriveNextMoves(blindedSnapshot);
+  const semanticMetrics = metrics(semantic, snapshot);
+  const blindedMetrics = metrics(blinded, blindedSnapshot);
+  const delta = subtract(semanticMetrics, blindedMetrics);
+
+  const semanticAddsSignal =
+    delta.groundedMoves > 0 &&
+    delta.provenanceSteps > 0 &&
+    delta.intentConnectedMoves > 0;
+
+  return {
+    semantic,
+    blinded,
+    semanticMetrics,
+    blindedMetrics,
+    delta,
+    interpretation: semanticAddsSignal
+      ? "The semantic representation exposes actionable gaps and provenance that disappear when the same graph is blinded. This supports continuing the experiment, but does not yet show that an LLM performs better."
+      : "Blinding the semantic labels did not materially reduce deterministic next-move derivation. The current ontology is not earning its complexity and should be simplified or rejected.",
+  };
+}
